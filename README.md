@@ -123,4 +123,8 @@ Bu proje [MIT](LICENSE) lisansı altında lisanslanmıştır.
 - E-posta - sezerkara949@gmail.com
 
 Projeye katkıda bulunan herkese teşekkürler! 🚀
+![image](https://github.com/user-attachments/assets/d0873f00-0991-4d15-9d62-f53800b4ec5f)
+![image](https://github.com/user-attachments/assets/87827d9c-c0b6-40ea-acb2-da5e5d0d9a35)
+![image](https://github.com/user-attachments/assets/7c8dc747-fe97-4c7b-b2c5-e9429c192fdf)
+
 

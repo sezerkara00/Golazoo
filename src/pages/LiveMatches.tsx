@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import TeamLogo from '../components/TeamLogo';
+import MatchCard from '../components/MatchCard';
 
 interface Match {
   id: number;
@@ -30,10 +30,13 @@ interface Match {
   startTimestamp: number;
   tournament: {
     name: string;
+    category: {
+      name: string;
+    };
   };
   status: {
-    description: string;
     type: string;
+    description: string;
   };
 }
 
@@ -42,6 +45,10 @@ const LiveMatches: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [groupedMatches, setGroupedMatches] = useState<{ [key: string]: Match[] }>({});
   const [loading, setLoading] = useState(true);
+  const [favoriteMatches, setFavoriteMatches] = useState<number[]>(() => {
+    const saved = localStorage.getItem('favoriteMatches');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     const fetchLiveMatches = async () => {
@@ -69,11 +76,14 @@ const LiveMatches: React.FC = () => {
   const groupMatchesByTournament = (matches: Match[]) => {
     const grouped: { [key: string]: Match[] } = {};
     matches.forEach(match => {
+      const categoryName = match.tournament.category?.name || '';
       const tournamentName = match.tournament.name;
-      if (!grouped[tournamentName]) {
-        grouped[tournamentName] = [];
+      const fullName = categoryName ? `${categoryName} - ${tournamentName}` : tournamentName;
+      
+      if (!grouped[fullName]) {
+        grouped[fullName] = [];
       }
-      grouped[tournamentName].push(match);
+      grouped[fullName].push(match);
     });
     setGroupedMatches(grouped);
   };
@@ -82,75 +92,60 @@ const LiveMatches: React.FC = () => {
     navigate(`/match/${match.id}`);
   };
 
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Canlı Maçlar</h1>
+  const toggleFavoriteMatch = (matchId: number) => {
+    setFavoriteMatches(prev => {
+      const newFavorites = prev.includes(matchId)
+        ? prev.filter(id => id !== matchId)
+        : [...prev, matchId];
       
-      {loading ? (
-        <div className="text-center">Yükleniyor...</div>
-      ) : (
-        <div className="grid gap-8">
-          {Object.keys(groupedMatches).map(tournamentName => (
-            <div key={tournamentName} className="mb-8">
-              <h2 className="text-xl font-semibold mb-4 text-gray-700">{tournamentName}</h2>
-              <div className="grid gap-4">
-                {groupedMatches[tournamentName].map((match) => (
-                  <div 
-                    key={match.id} 
-                    className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleMatchClick(match)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <TeamLogo 
-                          team={match.homeTeam.slug} 
-                          className="w-8 h-8"
-                          fallback={
-                            <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-white text-sm">
-                              {match.homeTeam.name.substring(0, 2).toUpperCase()}
-                            </div>
-                          }
-                        />
-                        <p className="font-semibold">{match.homeTeam.name}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl font-bold">{match.homeScore?.display ?? 0}</span>
-                          <span className="text-xl font-bold">-</span>
-                          <span className="text-xl font-bold">{match.awayScore?.display ?? 0}</span>
-                        </div>
-                        <span className="text-sm text-red-600 font-medium">
-                          {match.status.description}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <p className="font-semibold">{match.awayTeam.name}</p>
-                        <TeamLogo 
-                          team={match.awayTeam.slug}
-                          className="w-8 h-8"
-                          fallback={
-                            <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-white text-sm">
-                              {match.awayTeam.name.substring(0, 2).toUpperCase()}
-                            </div>
-                          }
-                        />
-                      </div>
-                    </div>
+      localStorage.setItem('favoriteMatches', JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900">
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-6 text-white bg-gray-800 p-4 rounded-lg">
+          Canlı Maçlar
+        </h1>
+        
+        {loading ? (
+          <div className="text-center text-gray-400 py-8">Yükleniyor...</div>
+        ) : (
+          <div className="grid gap-8">
+            {Object.entries(groupedMatches).map(([fullName, matches]) => {
+              const [category, tournament] = fullName.split(' - ');
+              
+              return (
+                <div key={fullName} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
+                  <div className="p-4 bg-gray-800 border-b border-gray-700">
+                    <span className="text-sm text-gray-400">{category}</span>
+                    <h2 className="text-lg font-semibold text-white">{tournament}</h2>
                   </div>
-                ))}
+                  <div className="divide-y divide-gray-700/50">
+                    {matches.map((match) => (
+                      <MatchCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => handleMatchClick(match)}
+                        onToggleFavorite={toggleFavoriteMatch}
+                        isFavorite={favoriteMatches.includes(match.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {matches.length === 0 && (
+              <div className="text-center text-gray-400 text-lg bg-gray-800/50 p-8 rounded-lg border border-gray-700">
+                Şu anda canlı maç bulunmuyor.
               </div>
-            </div>
-          ))}
-          
-          {matches.length === 0 && (
-            <p className="text-center text-gray-500 text-lg">
-              Şu anda canlı maç bulunmuyor.
-            </p>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

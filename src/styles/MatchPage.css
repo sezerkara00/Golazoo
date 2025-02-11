@@ -1,0 +1,19 @@
+.league-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.caret-icon {
+  transition: transform 0.3s ease;
+}
+
+.caret-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.league-matches.hidden {
+  display: none;
+}

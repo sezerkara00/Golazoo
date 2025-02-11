@@ -1,177 +1,232 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
-import DatePicker from 'react-datepicker';
-import { useNavigate } from 'react-router-dom';
-import "react-datepicker/dist/react-datepicker.css";
-import MatchDetails from './MatchDetails';
+import { Link, useNavigate } from 'react-router-dom';
 import TeamLogo from '../components/TeamLogo';
-import MatchCard from '../components/MatchCard';
 import DateSelector from '../components/DateSelector';
+import MatchCard from '../components/MatchCard';
 
 interface Match {
-  id: number;
-  homeTeam: { 
+  id: string;
+  homeTeam: {
+    id: string;
     name: string;
-    slug: string;
+    shortName: string;
   };
-  awayTeam: { 
+  awayTeam: {
+    id: string;
     name: string;
-    slug: string;
+    shortName: string;
   };
-  homeScore: {
-    current: number;
-    display: number;
-    period1: number;
-    period2: number;
-    normaltime: number;
-  };
-  awayScore: {
-    current: number;
-    display: number;
-    period1: number;
-    period2: number;
-    normaltime: number;
-  };
-  startTimestamp: number;
   tournament: {
     name: string;
     category: {
       name: string;
+      flag?: string;
+    };
+    uniqueTournament: {
+      name: string;
+      id: number;
     };
   };
   status: {
     type: string;
     description: string;
   };
+  startTimestamp: number;
+  homeScore?: {
+    current: number;
+  };
+  awayScore?: {
+    current: number;
+  };
 }
 
-const DEFAULT_PINNED_LEAGUES = [
-  'Europe - UEFA Champions League',
-  'Europe - UEFA Europa League',
+// Favori ligler
+const FAVORITE_LEAGUES = [
+  'Turkey - Trendyol Süper Lig',
   'England - Premier League',
-  'Spain - La Liga',
-  'Germany - Bundesliga',
-  'Italy - Serie A',
-  'France - Ligue 1',
-  'Turkey - Süper Lig'
+  'Europe - UEFA Champions League'
 ];
 
-const DailyMatches = () => {
-  const navigate = useNavigate();
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [groupedMatches, setGroupedMatches] = useState<{ [key: string]: Match[] }>({});
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [loading, setLoading] = useState(true);
-  const [pinnedLeagues, setPinnedLeagues] = useState<string[]>(() => {
-    const saved = localStorage.getItem('pinnedLeagues');
-    return saved ? JSON.parse(saved) : DEFAULT_PINNED_LEAGUES;
+// Öncelikli ligler - Türkiye en başta
+const PRIORITY_LEAGUES = [
+  'Turkey - Süper Lig',
+  'Europe - UEFA Champions League',
+  'Europe - UEFA Europa League',
+  'Europe - UEFA Europa Conference League',
+  'England - Premier League',
+  'Italy - Serie A',
+  'Spain - LaLiga',
+  'Germany - Bundesliga',
+  'France - Ligue 1',
+  'Netherlands - Eredivisie',
+  'Portugal - Primeira Liga',
+  'Belgium - Pro League'
+];
+
+// Lig kategorileri ve öncelikleri
+const LEAGUE_CATEGORIES = {
+  TURKISH: 'Turkey',
+  EUROPEAN: 'Europe',
+  TOP5: ['England', 'Spain', 'Italy', 'Germany', 'France'],
+  OTHER: 'Other'
+};
+
+// Lig öncelik sıralaması
+const getLeaguePriority = (leagueName: string): number => {
+  // Türkiye Ligleri
+  if (leagueName.includes('Turkey')) {
+    if (leagueName.includes('Süper Lig')) return 1;
+    if (leagueName.includes('1. Lig')) return 2;
+    return 3;
+  }
+
+  // Avrupa Kupaları
+  if (leagueName.includes('Champions League')) return 10;
+  if (leagueName.includes('Europa League')) return 11;
+  if (leagueName.includes('Conference League')) return 12;
+
+  // Top 5 Ligler
+  if (leagueName.includes('Premier League')) return 20;
+  if (leagueName.includes('LaLiga')) return 21;
+  if (leagueName.includes('Serie A')) return 22;
+  if (leagueName.includes('Bundesliga')) return 23;
+  if (leagueName.includes('Ligue 1')) return 24;
+
+  // Diğer önemli ligler
+  if (leagueName.includes('Eredivisie')) return 30;
+  if (leagueName.includes('Primeira Liga')) return 31;
+  if (leagueName.includes('Pro League')) return 32;
+
+  // Diğer tüm ligler
+  return 100;
+};
+
+const groupAndSortMatches = (matches: Match[]) => {
+  // Maçları liglere göre grupla
+  const groups = matches.reduce((groups: {[key: string]: Match[]}, match) => {
+    const country = match.tournament.category?.name || '';
+    const league = match.tournament.uniqueTournament?.name || match.tournament.name;
+    const fullKey = `${country} - ${league}`;
+
+    if (!groups[fullKey]) {
+      groups[fullKey] = [];
+    }
+    groups[fullKey].push(match);
+    return groups;
+  }, {});
+
+  // Favori ligleri ve diğer ligleri ayır
+  const favoriteLeagues = Object.entries(groups)
+    .filter(([key]) => FAVORITE_LEAGUES.some(league => 
+      key.toLowerCase().includes(league.toLowerCase().replace('trendyol ', ''))
+    ));
+
+  const otherLeagues = Object.entries(groups)
+    .filter(([key]) => !FAVORITE_LEAGUES.some(league => 
+      key.toLowerCase().includes(league.toLowerCase().replace('trendyol ', ''))
+    ));
+
+  // Diğer ligleri sırala
+  const sortedOtherLeagues = otherLeagues.sort((a, b) => {
+    const [keyA] = a;
+    const [keyB] = b;
+
+    // Avrupa kupaları kontrolü
+    const isChampionsA = keyA.includes('Champions League');
+    const isChampionsB = keyB.includes('Champions League');
+    const isEuropaA = keyA.includes('Europa League');
+    const isEuropaB = keyB.includes('Europa League');
+    const isConferenceA = keyA.includes('Conference League');
+    const isConferenceB = keyB.includes('Conference League');
+
+    // Şampiyonlar Ligi en üstte
+    if (isChampionsA && !isChampionsB) return -1;
+    if (!isChampionsA && isChampionsB) return 1;
+
+    // Avrupa Ligi ikinci sırada
+    if (isEuropaA && !isEuropaB) return -1;
+    if (!isEuropaA && isEuropaB) return 1;
+
+    // Konferans Ligi üçüncü sırada
+    if (isConferenceA && !isConferenceB) return -1;
+    if (!isConferenceB && isConferenceA) return 1;
+
+    // Diğer ligler için API sıralaması
+    const tournamentIdA = a[1][0]?.tournament?.uniqueTournament?.id || 0;
+    const tournamentIdB = b[1][0]?.tournament?.uniqueTournament?.id || 0;
+    return tournamentIdA - tournamentIdB;
   });
-  const [favoriteMatches, setFavoriteMatches] = useState<number[]>(() => {
+
+  // Favori ligleri ve diğer ligleri birleştir
+  return [...favoriteLeagues, ...sortedOtherLeagues];
+};
+
+const DailyMatches: React.FC = () => {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [favoriteMatches, setFavoriteMatches] = useState<string[]>(() => {
     const saved = localStorage.getItem('favoriteMatches');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const isMatchFinished = (match: Match) => match.status.type === 'finished';
-  const isMatchLive = (match: Match) => match.status.type === 'inprogress' || match.status.type === 'halftime';
+  // Başlangıçta tüm ligler açık gelsin
+  const [expandedLeagues, setExpandedLeagues] = useState<string[]>(() => {
+    // Tüm lig isimlerini içeren bir dizi oluştur
+    const allLeagues = [
+      ...PRIORITY_LEAGUES,
+      // Diğer tüm ligler de açık gelsin
+      'all'  // 'all' değeri tüm liglerin açık olduğunu gösterir
+    ];
+    return allLeagues;
+  });
+  const sortedLeagues = groupAndSortMatches(matches);
+
+  // Favori ligler localStorage'dan yüklensin
+  const [favoriteLeagues, setFavoriteLeagues] = useState<string[]>(() => {
+    const saved = localStorage.getItem('favoriteLeagues');
+    return saved ? JSON.parse(saved) : [
+      'Turkey - Trendyol Süper Lig',
+      'England - Premier League',
+      'Europe - UEFA Champions League'
+    ];
+  });
+
+  const navigate = useNavigate();
+
+  const [collapsedLeagues, setCollapsedLeagues] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      setLoading(true);
-      try {
-        const formattedDate = selectedDate.toISOString().split('T')[0];
-        const response = await api.get(`/sport/football/scheduled-events/${formattedDate}`);
-        setMatches(response.data.events);
-        groupMatchesByTournament(response.data.events);
-      } catch (error) {
-        console.error('Maçlar yüklenirken hata:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMatches();
   }, [selectedDate]);
 
-  const groupMatchesByTournament = (matches: Match[]) => {
-    const grouped: { [key: string]: Match[] } = {};
-    matches.forEach(match => {
-      const categoryName = match.tournament.category?.name || '';
-      const tournamentName = match.tournament.name;
-      const fullName = categoryName ? `${categoryName} - ${tournamentName}` : tournamentName;
+  const fetchMatches = async () => {
+    try {
+      setLoading(true);
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      const response = await fetch(`https://www.sofascore.com/api/v1/sport/football/scheduled-events/${formattedDate}`);
+      const data = await response.json();
       
-      if (!grouped[fullName]) {
-        grouped[fullName] = [];
-      }
-      grouped[fullName].push(match);
-    });
+      // Seçili tarihe ait maçları filtrele
+      const matchesForDate = data.events.filter((match: Match) => {
+        const matchDate = new Date(match.startTimestamp * 1000).toISOString().split('T')[0];
+        return matchDate === formattedDate;
+      });
 
-    // API'den gelen sıralamayı koru
-    setGroupedMatches(grouped);
-  };
+      // Maçları saate göre sırala
+      const sortedMatches = matchesForDate.sort((a: Match, b: Match) => 
+        a.startTimestamp - b.startTimestamp
+      );
 
-  const getMatchStatus = (match: Match) => {
-    switch (match.status.type) {
-      case 'inprogress':
-      case 'halftime':
-        return (
-          <span className="text-red-600 font-medium text-sm">
-            {match.status.description}
-          </span>
-        );
-      case 'finished':
-        return (
-          <span className="text-gray-600 text-sm">
-            Tamamlandı
-          </span>
-        );
-      default:
-        return (
-          <span className="text-gray-500 text-sm">
-            {new Date(match.startTimestamp * 1000).toLocaleTimeString('tr-TR', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </span>
-        );
+      setMatches(sortedMatches);
+    } catch (error) {
+      console.error('Maçlar yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getMatchScore = (match: Match) => {
-    const scoreClasses = `font-bold ${
-      isMatchLive(match) ? 'text-red-500 text-2xl' : 'text-white text-xl'
-    }`;
-
-    if (match.status.type === 'notstarted') {
-      return <div className="text-gray-400 text-lg">vs</div>;
-    }
-
-    return (
-      <div className={`flex items-center gap-2 ${scoreClasses}`}>
-        <span>{match.homeScore?.display ?? 0}</span>
-        <span>-</span>
-        <span>{match.awayScore?.display ?? 0}</span>
-      </div>
-    );
-  };
-
-  const handleMatchClick = (match: Match) => {
-    navigate(`/match/${match.id}`);
-  };
-
-  // Lig sabitleme/sabitleme kaldırma fonksiyonu
-  const togglePin = (leagueName: string) => {
-    setPinnedLeagues(prev => {
-      const newPinned = prev.includes(leagueName)
-        ? prev.filter(name => name !== leagueName)
-        : [...prev, leagueName];
-      
-      // Local storage'a kaydet
-      localStorage.setItem('pinnedLeagues', JSON.stringify(newPinned));
-      return newPinned;
-    });
-  };
-
-  const toggleFavoriteMatch = (matchId: number) => {
+  const toggleFavorite = (matchId: string) => {
     setFavoriteMatches(prev => {
       const newFavorites = prev.includes(matchId)
         ? prev.filter(id => id !== matchId)
@@ -182,190 +237,179 @@ const DailyMatches = () => {
     });
   };
 
-  // Ligleri grupla (sabitler ve diğerleri)
-  const { pinnedMatches, otherMatches } = Object.entries(groupedMatches).reduce(
-    (acc, [fullName, matches]) => {
-      // Eğer lig sabitlenmişse pinnedMatches'e ekle
-      if (pinnedLeagues.includes(fullName)) {
-        acc.pinnedMatches[fullName] = matches;
-      }
-      
-      // Tüm ligleri otherMatches'e ekle
-      acc.otherMatches[fullName] = matches;
-      
-      return acc;
-    },
-    { 
-      pinnedMatches: {} as { [key: string]: Match[] }, 
-      otherMatches: {} as { [key: string]: Match[] } 
-    }
-  );
+  const toggleLeagueExpand = (leagueName: string) => {
+    setExpandedLeagues(prev => 
+      prev.includes(leagueName) 
+        ? prev.filter(name => name !== leagueName)
+        : [...prev, leagueName]
+    );
+  };
 
-  // Favori maçları en üste getir
-  const sortMatchesByFavorite = (matches: Match[]) => {
-    return [...matches].sort((a, b) => {
-      const aFav = favoriteMatches.includes(a.id) ? -1 : 1;
-      const bFav = favoriteMatches.includes(b.id) ? -1 : 1;
-      return aFav - bFav;
+  // Bir ligin açık olup olmadığını kontrol et
+  const isLeagueExpanded = (leagueName: string) => {
+    return expandedLeagues.includes('all') || expandedLeagues.includes(leagueName);
+  };
+
+  // Lig favorilere ekleme/çıkarma fonksiyonu
+  const toggleFavoriteLeague = (leagueName: string) => {
+    setFavoriteLeagues(prev => {
+      const newFavorites = prev.includes(leagueName)
+        ? prev.filter(name => name !== leagueName)
+        : [...prev, leagueName];
+      
+      localStorage.setItem('favoriteLeagues', JSON.stringify(newFavorites));
+      return newFavorites;
     });
+  };
+
+  const handleMatchClick = (matchId: number) => {
+    navigate(`/match/${matchId}`);
+  };
+
+  const toggleLeague = (leagueName: string) => {
+    setCollapsedLeagues(prev => ({
+      ...prev,
+      [leagueName]: !prev[leagueName]
+    }));
   };
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="container mx-auto p-4">
-        {/* Başlık ve Tarih Seçici */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-gray-800 p-4 rounded-lg">
-          <h1 className="text-2xl font-bold text-white">Günlük Maçlar</h1>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => {
-                const prevDay = new Date(selectedDate);
-                prevDay.setDate(prevDay.getDate() - 1);
-                setSelectedDate(prevDay);
-              }}
-              className="text-gray-400 hover:text-white transition p-2"
-            >
-              ◀
-            </button>
-            
-            <DateSelector 
-              selectedDate={selectedDate}
-              onChange={setSelectedDate}
-            />
-            
-            <button 
-              onClick={() => {
-                const nextDay = new Date(selectedDate);
-                nextDay.setDate(nextDay.getDate() + 1);
-                setSelectedDate(nextDay);
-              }}
-              className="text-gray-400 hover:text-white transition p-2"
-            >
-              ▶
-            </button>
-          </div>
+      <div className="max-w-6xl mx-auto p-4">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="text-2xl font-bold text-white mb-4">
+            Günlük Maçlar
+          </h1>
+          <DateSelector 
+            selectedDate={selectedDate}
+            onChange={setSelectedDate}
+          />
         </div>
 
         {loading ? (
           <div className="text-center text-gray-400 py-8">Yükleniyor...</div>
         ) : (
-          <>
+          <div className="space-y-6">
+            {/* Sabit Ligler */}
+            <div className="bg-gray-800/50 rounded-lg overflow-hidden">
+              <div className="bg-gray-700 px-4 py-2">
+                <h2 className="text-lg font-semibold text-white">Favori Ligler</h2>
+              </div>
+              <div className="divide-y divide-gray-700">
+                {favoriteLeagues.map(leagueName => {
+                  const leagueMatches = matches.filter(match => {
+                    const fullLeagueName = `${match.tournament.category.name} - ${match.tournament.uniqueTournament.name}`;
+                    return fullLeagueName.toLowerCase().includes(leagueName.toLowerCase().replace('trendyol ', ''));
+                  });
+
+                  if (leagueMatches.length === 0) return null;
+
+                  return (
+                    <div key={leagueName} className="bg-gray-800/50">
+                      <div className="px-4 py-2 flex items-center justify-between">
+                        <h3 className="text-md font-semibold text-white">{leagueName}</h3>
+                        <button
+                          onClick={() => toggleFavoriteLeague(leagueName)}
+                          className="text-yellow-400 hover:text-yellow-500 transition-colors"
+                        >
+                          ★
+                        </button>
+                      </div>
+                      <div className="divide-y divide-gray-700">
+                        {leagueMatches.map(match => (
+                          <MatchCard
+                            key={match.id}
+                            match={match}
+                            onClick={() => handleMatchClick(match.id)}
+                            onToggleFavorite={toggleFavorite}
+                            isFavorite={favoriteMatches.includes(match.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Favori Maçlar */}
             {favoriteMatches.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-xl font-semibold mb-4 text-white bg-gray-800 p-3 rounded-lg">
-                  Favori Maçlar
-                </h2>
-                <div className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
-                  <div className="divide-y divide-gray-700/50">
-                    {matches
-                      .filter(match => favoriteMatches.includes(match.id))
-                      .map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          onClick={() => handleMatchClick(match)}
-                          onToggleFavorite={toggleFavoriteMatch}
-                          isFavorite={true}
-                        />
-                      ))}
+              <div className="bg-gray-800/50 rounded-lg overflow-hidden">
+                <div className="bg-gray-800 px-4 py-2">
+                  <h2 className="text-lg font-semibold text-white">Favori Maçlar</h2>
+                </div>
+                <div className="divide-y divide-gray-700">
+                  {matches
+                    .filter(match => favoriteMatches.includes(match.id))
+                    .map(match => (
+                      <MatchCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => handleMatchClick(match.id)}
+                        onToggleFavorite={toggleFavorite}
+                        isFavorite={true}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tüm Ligler */}
+            {sortedLeagues.map(([leagueName, leagueMatches]) => (
+              <div key={leagueName} className="bg-gray-800/50 rounded-lg overflow-hidden">
+                <div 
+                  className="bg-gray-800 px-4 py-2 flex items-center justify-between cursor-pointer"
+                >
+                  <div>
+                    <span className="text-sm text-gray-400">
+                      {leagueName.split(' - ')[0]}
+                    </span>
+                    <h2 className="text-lg font-semibold text-white">
+                      {leagueName.split(' - ')[1]}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavoriteLeague(leagueName);
+                      }}
+                      className="text-gray-400 hover:text-yellow-400 transition-colors"
+                    >
+                      {favoriteLeagues.includes(leagueName) ? '★' : '☆'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLeague(leagueName);
+                      }}
+                      className="p-1 hover:bg-gray-700 rounded-full"
+                    >
+                      <span className={`text-gray-400 transform transition-transform duration-200 block ${
+                        collapsedLeagues[leagueName] ? 'rotate-180' : ''
+                      }`}>
+                        ▼
+                      </span>
+                    </button>
                   </div>
                 </div>
+                {/* Maçları göster/gizle */}
+                {!collapsedLeagues[leagueName] && (
+                  <div className="divide-y divide-gray-700">
+                    {leagueMatches.map(match => (
+                      <MatchCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => handleMatchClick(match.id)}
+                        onToggleFavorite={toggleFavorite}
+                        isFavorite={favoriteMatches.includes(match.id)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Öne Çıkan Ligler */}
-            {Object.keys(pinnedMatches).length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-xl font-semibold mb-4 text-white bg-gray-800 p-3 rounded-lg">
-                  Öne Çıkan Ligler
-                </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {Object.entries(pinnedMatches).map(([fullName, matches]) => {
-                    const [category, tournament] = fullName.split(' - ');
-                    const sortedMatches = sortMatchesByFavorite(matches);
-                    
-                    return (
-                      <div key={fullName} id={tournament} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
-                        <div className="p-4 bg-gray-800 flex justify-between items-center border-b border-gray-700">
-                          <div>
-                            <span className="text-sm text-gray-400">{category}</span>
-                            <h2 className="text-lg font-semibold text-white">{tournament}</h2>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePin(fullName);
-                            }}
-                            className="text-gray-400 hover:text-white transition"
-                          >
-                            <span title="Sabitlemeyi Kaldır">📌</span>
-                          </button>
-                        </div>
-                        <div className="divide-y divide-gray-700/50">
-                          {sortedMatches.map((match) => (
-                            <MatchCard
-                              key={match.id}
-                              match={match}
-                              onClick={() => handleMatchClick(match)}
-                              onToggleFavorite={toggleFavoriteMatch}
-                              isFavorite={favoriteMatches.includes(match.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Diğer Ligler */}
-            {Object.keys(otherMatches).length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 text-white bg-gray-800 p-3 rounded-lg">
-                  Diğer Ligler
-                </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {Object.entries(otherMatches).map(([fullName, matches]) => {
-                    const [category, tournament] = fullName.split(' - ');
-                    const sortedMatches = sortMatchesByFavorite(matches);
-                    
-                    return (
-                      <div key={fullName} id={tournament} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
-                        <div className="p-4 bg-gray-800 flex justify-between items-center border-b border-gray-700">
-                          <div>
-                            <span className="text-sm text-gray-400">{category}</span>
-                            <h2 className="text-lg font-semibold text-white">{tournament}</h2>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePin(fullName);
-                            }}
-                            className="text-gray-400 hover:text-white transition"
-                          >
-                            <span title="Sabitle">📍</span>
-                          </button>
-                        </div>
-                        <div className="divide-y divide-gray-700/50">
-                          {sortedMatches.map((match) => (
-                            <MatchCard
-                              key={match.id}
-                              match={match}
-                              onClick={() => handleMatchClick(match)}
-                              onToggleFavorite={toggleFavoriteMatch}
-                              isFavorite={favoriteMatches.includes(match.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
     </div>

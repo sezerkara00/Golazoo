@@ -1,0 +1,40 @@
+[debug] [2025-02-11T10:46:23.189Z] ----------------------------------------------------------------------
+[debug] [2025-02-11T10:46:23.191Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\sezer\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js emulators:start
+[debug] [2025-02-11T10:46:23.191Z] CLI Version:   13.30.0
+[debug] [2025-02-11T10:46:23.192Z] Platform:      win32
+[debug] [2025-02-11T10:46:23.192Z] Node Version:  v20.11.0
+[debug] [2025-02-11T10:46:23.192Z] Time:          Tue Feb 11 2025 13:46:23 GMT+0300 (GMT+03:00)
+[debug] [2025-02-11T10:46:23.192Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-11T10:46:23.327Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-11T10:46:23.327Z] > authorizing via signed-in user (sezerkara1812@gmail.com)
+[debug] [2025-02-11T10:46:23.390Z] openjdk version "11.0.16.1" 2022-08-12 LTS
+
+[debug] [2025-02-11T10:46:23.390Z] OpenJDK Runtime Environment Microsoft-40648 (build 11.0.16.1+1-LTS)
+OpenJDK 64-Bit Server VM Microsoft-40648 (build 11.0.16.1+1-LTS, mixed mode)
+
+[debug] [2025-02-11T10:46:23.414Z] Parsed Java major version: 11
+[info] i  emulators: Starting emulators: storage {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: storage"}}
+[debug] [2025-02-11T10:46:23.426Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-11T10:46:23.426Z] [storage] Storage Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-02-11T10:46:23.426Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"storage":[{"address":"127.0.0.1","family":"IPv4","port":9199}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-02-11T10:46:23.429Z] [hub] writing locator at C:\Users\sezer\AppData\Local\Temp\hub-iddaa-app-8011f.json
+[debug] [2025-02-11T10:46:23.436Z] Ignoring unsupported arg: port {"metadata":{"emulator":{"name":"storage"},"message":"Ignoring unsupported arg: port"}}
+[debug] [2025-02-11T10:46:24.054Z] Temp file directory for storage emulator: C:\Users\sezer\AppData\Local\Temp/firebase/storage/blobs {"metadata":{"emulator":{"name":"storage"},"message":"Temp file directory for storage emulator: C:\\Users\\sezer\\AppData\\Local\\Temp/firebase/storage/blobs"}}
+[debug] [2025-02-11T10:46:24.067Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌──────────┬────────────────┬───────────────────────────────┐
+│ Emulator │ Host:Port      │ View in Emulator UI           │
+├──────────┼────────────────┼───────────────────────────────┤
+│ Storage  │ 127.0.0.1:9199 │ http://127.0.0.1:4000/storage │
+└──────────┴────────────────┴───────────────────────────────┘
+  Emulator Hub running at 127.0.0.1:4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 

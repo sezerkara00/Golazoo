@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../services/api';
-import MatchDetails from './MatchDetails';
 import MatchEvents from './MatchEvents';
 import MatchStats from './MatchStats';
 import TeamLogo from '../components/TeamLogo';
@@ -45,19 +44,27 @@ interface Match {
 }
 
 const MatchPage = () => {
-  const { matchId } = useParams<{ matchId: string }>();
+  const { id } = useParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'forum'>('events');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedLeagues, setCollapsedLeagues] = useState<{[key: string]: boolean}>({});
+
+  const toggleLeague = (leagueName: string) => {
+    setCollapsedLeagues(prev => ({
+      ...prev,
+      [leagueName]: !prev[leagueName]
+    }));
+  };
 
   useEffect(() => {
     const fetchMatch = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.get(`/event/${matchId}`);
-        console.log('API Response:', response.data); // Debug için
+        const response = await api.get(`/event/${id}`);
+        console.log('API Response:', response.data);
 
         const matchData = response.data.event;
         
@@ -74,10 +81,10 @@ const MatchPage = () => {
       }
     };
 
-    if (matchId) {
+    if (id) {
       fetchMatch();
     }
-  }, [matchId]);
+  }, [id]);
 
   if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-gray-400">Yükleniyor...</div>;
   if (error) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-red-500">{error}</div>;
@@ -101,7 +108,7 @@ const MatchPage = () => {
               {/* Ev Sahibi */}
               <div className="flex flex-col items-center gap-4 w-1/3">
                 <TeamLogo 
-                  team={match.homeTeam.slug}
+                  teamId={match.homeTeam.id}
                   className="w-24 h-24"
                   fallback={
                     <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white text-2xl">
@@ -129,7 +136,7 @@ const MatchPage = () => {
               {/* Deplasman */}
               <div className="flex flex-col items-center gap-4 w-1/3">
                 <TeamLogo 
-                  team={match.awayTeam.slug}
+                  teamId={match.awayTeam.id}
                   className="w-24 h-24"
                   fallback={
                     <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center text-white text-2xl">
@@ -179,15 +186,15 @@ const MatchPage = () => {
           </div>
 
           <div className="p-4">
-            {activeTab === 'events' && matchId && match && (
+            {activeTab === 'events' && id && match && (
               <MatchEvents 
-                matchId={parseInt(matchId)}
+                matchId={parseInt(id)}
                 homeTeamId={match.homeTeam.id}
                 awayTeamId={match.awayTeam.id}
               />
             )}
-            {activeTab === 'stats' && matchId && (
-              <MatchStats matchId={parseInt(matchId)} />
+            {activeTab === 'stats' && id && (
+              <MatchStats matchId={parseInt(id)} />
             )}
             {activeTab === 'forum' && (
               <div className="text-center text-gray-400 py-8">

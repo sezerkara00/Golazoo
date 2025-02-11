@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /team-logos/{teamId} {
+      // Herkes okuyabilir (logolar public)
+      allow read: if true;
+      
+      // Sadece belirli koşullarda yazma izni
+      allow write: if 
+        // Sadece resim dosyaları
+        request.resource.contentType.matches('image/.*') &&
+        // Maksimum 5MB
+        request.resource.size <= 5 * 1024 * 1024 &&
+        // Dosya adı takım slug'ı ile aynı olmalı
+        request.resource.name.matches('team-logos/.+') &&
+        // Sadece PNG ve JPG
+        request.resource.contentType.matches('image/(png|jpeg|jpg)');
+    }
+    
+    // Diğer tüm yollar için erişimi kapat
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

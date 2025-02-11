@@ -1,63 +1,77 @@
-# Match Forum 🏆
+# Team Logo Management 🎨
 
-Canlı maç tartışmaları için geliştirilen modern ve interaktif bir forum platformu. Kullanıcılar maçları takip edebilir, yorum yapabilir ve diğer taraftarlarla etkileşime geçebilir.
-
----
+Futbol takımlarının logolarını yönetmek için geliştirilmiş modern bir web uygulaması. SofaScore API entegrasyonu ile güncel takım verilerini çeker ve Firebase altyapısı ile logo yönetimini sağlar.
 
 ## 🌟 Özellikler
 
-### 💬 Forum Özellikleri
-- Maç başına özel tartışma forumları
-- İç içe yorum sistemi (nested comments)
-- Yorum beğenme sistemi
-- Gerçek zamanlı bildirimler
-- Maç istatistikleri
-- Canlı skor takibi
+### 🏆 Lig Desteği
+- Süper Lig 🇹🇷
+- LaLiga 🇪🇸
+- Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿
+- Serie A 🇮🇹
 
-### 🔐 Kullanıcı Deneyimi
-- Modern ve koyu tema arayüz
-- Mobil uyumlu tasarım
-- Hızlı yükleme süreleri
-- Güvenli kullanıcı kimlik doğrulama
-- Çoklu dil desteği (yakında)
+### 💼 Logo Yönetimi
+- Otomatik boyutlandırma ve sıkıştırma
+- Firebase Storage entegrasyonu
+- Firestore veritabanı kaydı
+- Anlık önizleme
 
----
+### 🔍 Akıllı Filtreleme
+- Son 30 günlük maç verilerine göre takım listesi
+- Lig ve ülke bazlı doğrulama
+- Takım adı ve slug bazlı arama
+- Tekrar eden takımların otomatik filtrelenmesi
 
 ## 🛠 Teknoloji Yığını
 
-### 🛠️ Frontend
+### Frontend
 - **React 18** - Modern UI geliştirme
 - **TypeScript** - Tip güvenliği
-- **Tailwind CSS** - Stil ve tasarım
-- **Context API** - State yönetimi
+- **TailwindCSS** - Stil ve tasarım
+- **Firebase SDK** - Backend entegrasyonu
 
-### 🛠️ Backend
-- **Python (FastAPI/Django)** - API sunucusu
-- **PostgreSQL** - Ana veritabanı
-- **Redis** - Önbellek yönetimi
-- **WebSocket** - Gerçek zamanlı iletişim
+### Backend & Storage
+- **Firebase Storage** - Logo depolama
+- **Firestore** - Veritabanı
+- **SofaScore API** - Maç ve takım verileri
 
----
+## 🚀 Kurulum
 
-## 📚 Proje Yapısı
+1. Repoyu klonlayın:
+```bash
+git clone https://github.com/kullaniciadi/team-logo-management.git
+cd team-logo-management
+```
+
+2. Bağımlılıkları yükleyin:
+```bash
+npm install
+```
+
+3. `.env.local` dosyası oluşturun ve gerekli ortam değişkenlerini ekleyin:
+```env
+VITE_FIREBASE_CONFIG=your_firebase_config
+```
+
+4. Geliştirme sunucusunu başlatın:
+```bash
+npm run dev
+```
+
+## 📁 Proje Yapısı
 
 ```
 src/
-├── pages/
-│   ├── MatchForum.tsx # Maç forum sayfası
-│   └── DailyMatches.tsx # Günlük maçlar sayfası
 ├── components/
-│   └── Navbar.tsx # Navigasyon bileşeni
-├── services/
-│   └── api.ts # API servisleri
-├── contexts/ # Context dosyaları
-├── types/ # TypeScript tipleri
-└── utils/ # Yardımcı fonksiyonlar
+│   └── TeamLogo.tsx     # Logo bileşeni
+├── pages/
+│   └── AdminPanel.tsx   # Ana yönetim paneli
+├── firebase.ts          # Firebase yapılandırması
+└── types/
+    └── index.ts         # TypeScript tipleri
 ```
 
----
-
-## 💪 Katkıda Bulunma
+## 🤝 Katkıda Bulunma
 
 1. Fork yapın
 2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
@@ -65,66 +79,25 @@ src/
 4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
 5. Pull Request açın
 
----
+## 📝 Yapılacaklar
 
-## ✅ Yapılacaklar
+- [ ] Bundesliga desteği
+- [ ] Ligue 1 desteği
+- [ ] Toplu logo güncelleme
+- [ ] Logo geçmişi
+- [ ] Yetkilendirme sistemi
 
-- [ ] Kullanıcı profil sayfaları
-- [ ] Maç istatistikleri entegrasyonu
-- [ ] Moderasyon araçları
-- [ ] Çoklu dil desteği
-- [ ] PWA desteği
-
----
-
-## 🐝 Kurulum
-
-Projeyi klonlayın:
-```bash
-git clone https://github.com/sezerkara00/match-forum.git
-cd match-forum
-```
-
-### Frontend Kurulumu
-```bash
-npm install
-npm run dev
-```
-
-### Backend Kurulumu
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
----
-
-## 📂 Ortam Değişkenleri
-
-`.env` dosyanızı aşağıdaki gibi yapılandırın:
-```env
-VITE_API_URL=http://localhost:5000
-VITE_WS_URL=ws://localhost:5000
-DATABASE_URL=postgresql://user:password@localhost:5432/matchforum
-REDIS_URL=redis://localhost:6379
-```
-
----
-
-## 💎 Lisans
+## 📄 Lisans
 
 Bu proje [MIT](LICENSE) lisansı altında lisanslanmıştır.
 
+## 📞 İletişim
+
+- Geliştirici - [@kullaniciadi](https://github.com/kullaniciadi)
+- E-posta - ornek@email.com
+
 ---
 
-## 🙏 İletişim
-
-- Geliştirici - [@sezerkara00](https://github.com/sezerkara00)
-- E-posta - sezerkara949@gmail.com
-
-Projeye katkıda bulunan herkese teşekkürler! 🚀
-![image](https://github.com/user-attachments/assets/d0873f00-0991-4d15-9d62-f53800b4ec5f)
-![image](https://github.com/user-attachments/assets/87827d9c-c0b6-40ea-acb2-da5e5d0d9a35)
-![image](https://github.com/user-attachments/assets/7c8dc747-fe97-4c7b-b2c5-e9429c192fdf)
+⭐️ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!
 
 

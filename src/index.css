@@ -4,4 +4,41 @@
 
 body {
   @apply bg-gray-50;
+}
+
+/* DatePicker özelleştirmeleri */
+.react-datepicker {
+  @apply bg-gray-800 border border-gray-700 text-white !important;
+}
+
+.react-datepicker__header {
+  @apply bg-gray-800 border-gray-700 !important;
+}
+
+.react-datepicker__current-month {
+  @apply text-white !important;
+}
+
+.react-datepicker__day-name {
+  @apply text-gray-400 !important;
+}
+
+.react-datepicker__day {
+  @apply text-gray-300 hover:bg-gray-700 rounded-full !important;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-blue-500 text-white !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  @apply bg-blue-500/50 !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  @apply border-gray-400 !important;
+}
+
+.react-datepicker__navigation:hover *::before {
+  @apply border-white !important;
 } 

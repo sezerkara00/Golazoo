@@ -6,6 +6,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import MatchDetails from './MatchDetails';
 import TeamLogo from '../components/TeamLogo';
 import MatchCard from '../components/MatchCard';
+import DateSelector from '../components/DateSelector';
 
 interface Match {
   id: number;
@@ -213,14 +214,36 @@ const DailyMatches = () => {
     <div className="min-h-screen bg-gray-900">
       <div className="container mx-auto p-4">
         {/* Başlık ve Tarih Seçici */}
-        <div className="flex items-center gap-4 mb-8 bg-gray-800 p-4 rounded-lg">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 bg-gray-800 p-4 rounded-lg">
           <h1 className="text-2xl font-bold text-white">Günlük Maçlar</h1>
-          <DatePicker
-            selected={selectedDate}
-            onChange={(date) => date && setSelectedDate(date)}
-            dateFormat="dd/MM/yyyy"
-            className="bg-gray-700 border border-gray-600 p-2 rounded text-white"
-          />
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => {
+                const prevDay = new Date(selectedDate);
+                prevDay.setDate(prevDay.getDate() - 1);
+                setSelectedDate(prevDay);
+              }}
+              className="text-gray-400 hover:text-white transition p-2"
+            >
+              ◀
+            </button>
+            
+            <DateSelector 
+              selectedDate={selectedDate}
+              onChange={setSelectedDate}
+            />
+            
+            <button 
+              onClick={() => {
+                const nextDay = new Date(selectedDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                setSelectedDate(nextDay);
+              }}
+              className="text-gray-400 hover:text-white transition p-2"
+            >
+              ▶
+            </button>
+          </div>
         </div>
 
         {loading ? (

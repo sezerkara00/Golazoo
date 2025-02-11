@@ -6,6 +6,7 @@ import DailyMatches from './pages/DailyMatches';
 import MatchPage from './pages/MatchPage';
 import MatchDetails from './pages/MatchDetails';
 import { AuthProvider } from './contexts/AuthContext';
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/live" element={<LiveMatches />} />
           <Route path="/match/:matchId" element={<MatchPage />} />
           <Route path="/match/details/:id" element={<MatchDetails />} />
+          <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </div>
     </AuthProvider>

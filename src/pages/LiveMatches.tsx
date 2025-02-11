@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import TeamLogo from '../components/TeamLogo';
 
 interface Match {
   id: number;
   homeTeam: { 
     name: string;
+    slug: string;
   };
   awayTeam: { 
     name: string;
+    slug: string;
   };
   homeScore: {
     current: number;
@@ -34,7 +37,7 @@ interface Match {
   };
 }
 
-const LiveMatches = () => {
+const LiveMatches: React.FC = () => {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [groupedMatches, setGroupedMatches] = useState<{ [key: string]: Match[] }>({});
@@ -75,6 +78,10 @@ const LiveMatches = () => {
     setGroupedMatches(grouped);
   };
 
+  const handleMatchClick = (match: Match) => {
+    navigate(`/match/${match.id}`);
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Canlı Maçlar</h1>
@@ -90,11 +97,20 @@ const LiveMatches = () => {
                 {groupedMatches[tournamentName].map((match) => (
                   <div 
                     key={match.id} 
-                    className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer"
-                    onClick={() => navigate(`/match/${match.id}`)}
+                    className="bg-white rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleMatchClick(match)}
                   >
                     <div className="flex justify-between items-center">
-                      <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <TeamLogo 
+                          team={match.homeTeam.slug} 
+                          className="w-8 h-8"
+                          fallback={
+                            <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-white text-sm">
+                              {match.homeTeam.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          }
+                        />
                         <p className="font-semibold">{match.homeTeam.name}</p>
                       </div>
                       
@@ -109,8 +125,17 @@ const LiveMatches = () => {
                         </span>
                       </div>
                       
-                      <div className="flex-1 text-right">
+                      <div className="flex items-center gap-3">
                         <p className="font-semibold">{match.awayTeam.name}</p>
+                        <TeamLogo 
+                          team={match.awayTeam.slug}
+                          className="w-8 h-8"
+                          fallback={
+                            <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-white text-sm">
+                              {match.awayTeam.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          }
+                        />
                       </div>
                     </div>
                   </div>

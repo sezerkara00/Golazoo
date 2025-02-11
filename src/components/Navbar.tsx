@@ -5,7 +5,7 @@ const Navbar = () => {
   return (
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">GOLAZO</Link>
+        <Link to="/" className="text-xl font-bold">GOLAZOO</Link>
         
         <div className="flex gap-4">
           <Link to="/matches" className="hover:text-gray-300">Günlük Maçlar</Link>

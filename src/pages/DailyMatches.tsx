@@ -275,7 +275,7 @@ const DailyMatches: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="max-w-6xl mx-auto p-4">
+      <div className="max-w-7xl mx-auto p-4">
         <div className="flex flex-col items-center mb-6">
           <h1 className="text-2xl font-bold text-white mb-4">
             Günlük Maçlar
@@ -289,33 +289,122 @@ const DailyMatches: React.FC = () => {
         {loading ? (
           <div className="text-center text-gray-400 py-8">Yükleniyor...</div>
         ) : (
-          <div className="space-y-6">
-            {/* Sabit Ligler */}
-            <div className="bg-gray-800/50 rounded-lg overflow-hidden">
-              <div className="bg-gray-700 px-4 py-2">
-                <h2 className="text-lg font-semibold text-white">Favori Ligler</h2>
+          <div>
+            {/* Favoriler Bölümü */}
+            <div className="space-y-6 mb-8">
+              {/* Favori Maçlar */}
+              {favoriteMatches.length > 0 && (
+                <div className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
+                  <div className="bg-gradient-to-r from-red-600/20 to-transparent px-4 py-2">
+                    <h2 className="text-lg font-semibold text-white">Favori Maçlar</h2>
+                  </div>
+                  <div className="divide-y divide-gray-700">
+                    {matches
+                      .filter(match => favoriteMatches.includes(match.id))
+                      .map(match => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onClick={() => handleMatchClick(match.id)}
+                          onToggleFavorite={toggleFavorite}
+                          isFavorite={true}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Favori Ligler */}
+              {favoriteLeagues.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {favoriteLeagues.map(leagueName => {
+                    const leagueMatches = matches.filter(match => {
+                      const fullLeagueName = `${match.tournament.category.name} - ${match.tournament.uniqueTournament.name}`;
+                      return fullLeagueName.toLowerCase().includes(leagueName.toLowerCase().replace('trendyol ', ''));
+                    });
+
+                    if (leagueMatches.length === 0) return null;
+
+                    return (
+                      <div key={leagueName} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
+                        <div className="bg-gradient-to-r from-yellow-600/20 to-transparent px-4 py-2 flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">{leagueName}</h3>
+                          <button
+                            onClick={() => toggleFavoriteLeague(leagueName)}
+                            className="text-yellow-400 hover:text-yellow-500 transition-colors"
+                          >
+                            ★
+                          </button>
+                        </div>
+                        <div className="divide-y divide-gray-700">
+                          {leagueMatches.map(match => (
+                            <MatchCard
+                              key={match.id}
+                              match={match}
+                              onClick={() => handleMatchClick(match.id)}
+                              onToggleFavorite={toggleFavorite}
+                              isFavorite={favoriteMatches.includes(match.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Ayırıcı - Favoriler varsa göster */}
+            {(favoriteMatches.length > 0 || favoriteLeagues.length > 0) && (
+              <div className="relative py-4 mb-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-700"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-4 bg-gray-900 text-gray-500 text-sm">DİĞER LİGLER</span>
+                </div>
               </div>
-              <div className="divide-y divide-gray-700">
-                {favoriteLeagues.map(leagueName => {
-                  const leagueMatches = matches.filter(match => {
-                    const fullLeagueName = `${match.tournament.category.name} - ${match.tournament.uniqueTournament.name}`;
-                    return fullLeagueName.toLowerCase().includes(leagueName.toLowerCase().replace('trendyol ', ''));
-                  });
+            )}
 
-                  if (leagueMatches.length === 0) return null;
-
-                  return (
-                    <div key={leagueName} className="bg-gray-800/50">
-                      <div className="px-4 py-2 flex items-center justify-between">
-                        <h3 className="text-md font-semibold text-white">{leagueName}</h3>
+            {/* Tüm Ligler */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sortedLeagues
+                .filter(([leagueName]) => !favoriteLeagues.includes(leagueName))
+                .map(([leagueName, leagueMatches]) => (
+                  <div key={leagueName} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
+                    <div 
+                      className="bg-gradient-to-r from-gray-700/50 to-transparent px-4 py-3 flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="text-sm text-gray-400">
+                          {leagueName.split(' - ')[0]}
+                        </span>
+                        <h2 className="text-lg font-semibold text-white">
+                          {leagueName.split(' - ')[1]}
+                        </h2>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleFavoriteLeague(leagueName)}
-                          className="text-yellow-400 hover:text-yellow-500 transition-colors"
+                          className="text-gray-400 hover:text-yellow-400 transition-colors"
                         >
-                          ★
+                          {favoriteLeagues.includes(leagueName) ? '★' : '☆'}
+                        </button>
+                        <button
+                          onClick={() => toggleLeague(leagueName)}
+                          className="p-1 hover:bg-gray-700 rounded-full transition-colors"
+                        >
+                          <span className={`text-gray-400 transform transition-transform duration-200 block ${
+                            collapsedLeagues[leagueName] ? 'rotate-180' : ''
+                          }`}>
+                            ▼
+                          </span>
                         </button>
                       </div>
-                      <div className="divide-y divide-gray-700">
+                    </div>
+                    {/* Maç Listesi */}
+                    {!collapsedLeagues[leagueName] && (
+                      <div className="divide-y divide-gray-700/50">
                         {leagueMatches.map(match => (
                           <MatchCard
                             key={match.id}
@@ -326,89 +415,10 @@ const DailyMatches: React.FC = () => {
                           />
                         ))}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </div>
+                ))}
             </div>
-
-            {/* Favori Maçlar */}
-            {favoriteMatches.length > 0 && (
-              <div className="bg-gray-800/50 rounded-lg overflow-hidden">
-                <div className="bg-gray-800 px-4 py-2">
-                  <h2 className="text-lg font-semibold text-white">Favori Maçlar</h2>
-                </div>
-                <div className="divide-y divide-gray-700">
-                  {matches
-                    .filter(match => favoriteMatches.includes(match.id))
-                    .map(match => (
-                      <MatchCard
-                        key={match.id}
-                        match={match}
-                        onClick={() => handleMatchClick(match.id)}
-                        onToggleFavorite={toggleFavorite}
-                        isFavorite={true}
-                      />
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tüm Ligler */}
-            {sortedLeagues.map(([leagueName, leagueMatches]) => (
-              <div key={leagueName} className="bg-gray-800/50 rounded-lg overflow-hidden">
-                <div 
-                  className="bg-gray-800 px-4 py-2 flex items-center justify-between cursor-pointer"
-                >
-                  <div>
-                    <span className="text-sm text-gray-400">
-                      {leagueName.split(' - ')[0]}
-                    </span>
-                    <h2 className="text-lg font-semibold text-white">
-                      {leagueName.split(' - ')[1]}
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavoriteLeague(leagueName);
-                      }}
-                      className="text-gray-400 hover:text-yellow-400 transition-colors"
-                    >
-                      {favoriteLeagues.includes(leagueName) ? '★' : '☆'}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleLeague(leagueName);
-                      }}
-                      className="p-1 hover:bg-gray-700 rounded-full"
-                    >
-                      <span className={`text-gray-400 transform transition-transform duration-200 block ${
-                        collapsedLeagues[leagueName] ? 'rotate-180' : ''
-                      }`}>
-                        ▼
-                      </span>
-                    </button>
-                  </div>
-                </div>
-                {/* Maçları göster/gizle */}
-                {!collapsedLeagues[leagueName] && (
-                  <div className="divide-y divide-gray-700">
-                    {leagueMatches.map(match => (
-                      <MatchCard
-                        key={match.id}
-                        match={match}
-                        onClick={() => handleMatchClick(match.id)}
-                        onToggleFavorite={toggleFavorite}
-                        isFavorite={favoriteMatches.includes(match.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         )}
       </div>

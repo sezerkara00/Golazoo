@@ -1,98 +1,83 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MatchCard from '../components/MatchCard';
 
 interface Match {
-  id: number;
-  homeTeam: { 
+  id: string;
+  homeTeam: {
+    id: number;
     name: string;
-    slug: string;
+    shortName: string;
   };
-  awayTeam: { 
+  awayTeam: {
+    id: number;
     name: string;
-    slug: string;
+    shortName: string;
   };
-  homeScore: {
-    current: number;
-    display: number;
-    period1: number;
-    period2: number;
-    normaltime: number;
-  };
-  awayScore: {
-    current: number;
-    display: number;
-    period1: number;
-    period2: number;
-    normaltime: number;
-  };
-  startTimestamp: number;
   tournament: {
     name: string;
     category: {
       name: string;
+    };
+    uniqueTournament: {
+      name: string;
+      id: number;
     };
   };
   status: {
     type: string;
     description: string;
   };
+  startTimestamp: number;
+  homeScore: {
+    current: number;
+    display: number;
+  };
+  awayScore: {
+    current: number;
+    display: number;
+  };
 }
 
 const LiveMatches: React.FC = () => {
-  const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
-  const [groupedMatches, setGroupedMatches] = useState<{ [key: string]: Match[] }>({});
   const [loading, setLoading] = useState(true);
-  const [favoriteMatches, setFavoriteMatches] = useState<number[]>(() => {
+  const [favoriteMatches, setFavoriteMatches] = useState<string[]>(() => {
     const saved = localStorage.getItem('favoriteMatches');
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    const fetchLiveMatches = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/sport/football/events/live');
-        const liveMatches = response.data.events.filter((match: Match) => 
-          match.status.type === 'inprogress' || 
-          match.status.type === 'halftime'
-        );
-        setMatches(liveMatches);
-        groupMatchesByTournament(liveMatches);
-      } catch (error) {
-        console.error('Canlı maçlar yüklenirken hata:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const navigate = useNavigate();
 
+  useEffect(() => {
     fetchLiveMatches();
-    const interval = setInterval(fetchLiveMatches, 60000);
+    // Her 30 saniyede bir güncelle
+    const interval = setInterval(fetchLiveMatches, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const groupMatchesByTournament = (matches: Match[]) => {
-    const grouped: { [key: string]: Match[] } = {};
-    matches.forEach(match => {
-      const categoryName = match.tournament.category?.name || '';
-      const tournamentName = match.tournament.name;
-      const fullName = categoryName ? `${categoryName} - ${tournamentName}` : tournamentName;
+  const fetchLiveMatches = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('https://www.sofascore.com/api/v1/sport/football/events/live');
+      const data = await response.json();
       
-      if (!grouped[fullName]) {
-        grouped[fullName] = [];
-      }
-      grouped[fullName].push(match);
-    });
-    setGroupedMatches(grouped);
+      // Canlı maçları filtrele ve sırala
+      const liveMatches = data.events.filter((match: Match) => 
+        match.status.type === 'inprogress'
+      ).sort((a: Match, b: Match) => 
+        a.tournament.uniqueTournament.id - b.tournament.uniqueTournament.id
+      );
+
+      setMatches(liveMatches);
+    } catch (error) {
+      console.error('Canlı maçlar yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleMatchClick = (match: Match) => {
-    navigate(`/match/${match.id}`);
-  };
-
-  const toggleFavoriteMatch = (matchId: number) => {
+  const toggleFavorite = (matchId: string) => {
     setFavoriteMatches(prev => {
       const newFavorites = prev.includes(matchId)
         ? prev.filter(id => id !== matchId)
@@ -103,46 +88,114 @@ const LiveMatches: React.FC = () => {
     });
   };
 
+  const handleMatchClick = (matchId: number) => {
+    navigate(`/match/${matchId}`);
+  };
+
+  // Maçları liglere göre grupla
+  const groupedMatches = matches.reduce((groups: {[key: string]: Match[]}, match) => {
+    const leagueName = `${match.tournament.category.name} - ${match.tournament.uniqueTournament.name}`;
+    if (!groups[leagueName]) {
+      groups[leagueName] = [];
+    }
+    groups[leagueName].push(match);
+    return groups;
+  }, {});
+
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-6 text-white bg-gray-800 p-4 rounded-lg">
-          Canlı Maçlar
-        </h1>
-        
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="text-2xl font-bold text-white mb-4">
+            Canlı Maçlar
+          </h1>
+          <div className="text-sm text-gray-400">
+            Her 30 saniyede bir güncelleniyor
+          </div>
+        </div>
+
         {loading ? (
           <div className="text-center text-gray-400 py-8">Yükleniyor...</div>
+        ) : matches.length === 0 ? (
+          <div className="text-center text-gray-400 py-8">
+            Şu anda canlı maç bulunmuyor
+          </div>
         ) : (
-          <div className="grid gap-8">
-            {Object.entries(groupedMatches).map(([fullName, matches]) => {
-              const [category, tournament] = fullName.split(' - ');
-              
-              return (
-                <div key={fullName} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
-                  <div className="p-4 bg-gray-800 border-b border-gray-700">
-                    <span className="text-sm text-gray-400">{category}</span>
-                    <h2 className="text-lg font-semibold text-white">{tournament}</h2>
-                  </div>
-                  <div className="divide-y divide-gray-700/50">
-                    {matches.map((match) => (
-                      <MatchCard
-                        key={match.id}
-                        match={match}
-                        onClick={() => handleMatchClick(match)}
-                        onToggleFavorite={toggleFavoriteMatch}
-                        isFavorite={favoriteMatches.includes(match.id)}
-                      />
-                    ))}
+          <div className="space-y-6">
+            {/* Favori Maçlar */}
+            {favoriteMatches.length > 0 && (
+              <div className="bg-gradient-to-br from-gray-800/80 via-gray-800/50 to-gray-800/80 rounded-lg overflow-hidden border border-gray-700 shadow-xl">
+                <div className="bg-gradient-to-r from-red-600/30 via-red-500/20 to-transparent px-4 py-3 border-b border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <span className="text-yellow-500">★</span>
+                      Favori Maçlar
+                    </h2>
+                    <span className="text-sm text-gray-400">
+                      {matches.filter(match => favoriteMatches.includes(match.id)).length} maç
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-            
-            {matches.length === 0 && (
-              <div className="text-center text-gray-400 text-lg bg-gray-800/50 p-8 rounded-lg border border-gray-700">
-                Şu anda canlı maç bulunmuyor.
+                <div className="divide-y divide-gray-700">
+                  {matches
+                    .filter(match => favoriteMatches.includes(match.id))
+                    .map(match => (
+                      <div key={match.id} className="hover:bg-gray-700/30 transition-colors">
+                        <MatchCard
+                          match={match}
+                          onClick={() => handleMatchClick(match.id)}
+                          onToggleFavorite={toggleFavorite}
+                          isFavorite={true}
+                        />
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
+
+            {/* Ayırıcı - Favoriler varsa göster */}
+            {favoriteMatches.length > 0 && (
+              <div className="relative py-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-700"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="px-6 py-1 bg-gray-900 text-gray-400 text-sm font-medium rounded-full border border-gray-700">
+                    DİĞER MAÇLAR
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Tüm Ligler */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(groupedMatches).map(([leagueName, leagueMatches]) => (
+                <div key={leagueName} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
+                  <div className="bg-gradient-to-r from-gray-700/50 to-transparent px-4 py-3">
+                    <div>
+                      <span className="text-sm text-gray-400">
+                        {leagueName.split(' - ')[0]}
+                      </span>
+                      <h2 className="text-lg font-semibold text-white">
+                        {leagueName.split(' - ')[1]}
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="divide-y divide-gray-700/50">
+                    {leagueMatches
+                      .map(match => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onClick={() => handleMatchClick(match.id)}
+                          onToggleFavorite={toggleFavorite}
+                          isFavorite={favoriteMatches.includes(match.id)}
+                        />
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

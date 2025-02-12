@@ -9,10 +9,24 @@ interface MatchCardProps {
 }
 
 const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, onToggleFavorite, isFavorite }) => {
-  const isLive = match.status.type === 'inprogress';
-  
+  const isLive = () => {
+    const status = match.status.type?.toLowerCase();
+    const description = match.status.description?.toLowerCase();
+
+    return (
+      status === 'inprogress' || 
+      status === 'live' ||
+      description?.includes('devre') ||
+      description?.includes('yarı') ||
+      /^\d+\'$/.test(description || '') || // Dakika gösterimi (örn: "45'")
+      description?.includes('halftime') ||
+      description?.includes('half time') ||
+      status === 'playing'
+    );
+  };
+
   const getScoreStyle = (score: number) => {
-    if (!isLive) return 'text-white';
+    if (!isLive()) return 'text-white';
     if (score >= 3) return 'text-green-400 font-bold';
     if (score >= 1) return 'text-yellow-400';
     return 'text-gray-400';
@@ -36,25 +50,73 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, onToggleFavorite,
     }
   };
 
+  const getMatchStatus = () => {
+    const status = match.status.type?.toLowerCase();
+    const description = match.status.description?.toLowerCase();
+
+    console.log('Maç durumu:', { status, description }); // Debug için
+
+    // Dakika kontrolü (örn: "45'")
+    const minuteMatch = description?.match(/^(\d+)'/);
+    if (minuteMatch) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/80 text-white animate-pulse">
+          {minuteMatch[0]}
+        </span>
+      );
+    }
+
+    // Özel durumlar
+    if (description?.includes('half time') || description?.includes('halftime') || description?.includes('devre arası')) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-500/80 text-white">
+          Devre Arası
+        </span>
+      );
+    }
+
+    if (description?.includes('1st half') || description?.includes('first half') || description?.includes('1. yarı')) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/80 text-white animate-pulse">
+          1. Yarı
+        </span>
+      );
+    }
+
+    if (description?.includes('2nd half') || description?.includes('second half') || description?.includes('2. yarı')) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/80 text-white animate-pulse">
+          2. Yarı
+        </span>
+      );
+    }
+
+    // Varsayılan CANLI gösterimi
+    if (isLive()) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/80 text-white animate-pulse">
+          CANLI
+        </span>
+      );
+    }
+
+    // Maç başlamamışsa saati göster
+    return new Date(match.startTimestamp * 1000).toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div 
       onClick={onClick}
       className={`p-3 hover:bg-gray-700/50 cursor-pointer transition-colors ${
-        isLive ? 'bg-red-900/20' : ''
+        isLive() ? 'bg-red-900/20' : ''
       }`}
     >
       <div className="flex items-center justify-between">
-        <div className="w-20 text-gray-400 text-sm">
-          {isLive ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/80 text-white animate-pulse">
-              CANLI
-            </span>
-          ) : (
-            new Date(match.startTimestamp * 1000).toLocaleTimeString('tr-TR', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          )}
+        <div className="w-24 text-gray-400 text-sm">
+          {getMatchStatus()}
         </div>
 
         <div className="flex-1 mx-4">
@@ -81,13 +143,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, onToggleFavorite,
           <div className={`
             text-xl font-bold mb-2 min-w-[40px] text-center
             px-2 py-0.5 rounded
-            ${isLive 
+            ${isLive() 
               ? 'bg-gray-800 border-2 border-gray-600 text-white shadow-lg' 
               : match.status.type === 'finished'
                 ? 'bg-gray-800/40 border border-gray-700 text-gray-300'
                 : 'text-gray-500'
             }
-            ${match.homeScore?.current > match.awayScore?.current && (isLive || match.status.type === 'finished')
+            ${match.homeScore?.current > match.awayScore?.current && (isLive() || match.status.type === 'finished')
               ? 'ring-2 ring-green-500/30'
               : ''
             }
@@ -97,13 +159,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, onToggleFavorite,
           <div className={`
             text-xl font-bold min-w-[40px] text-center
             px-2 py-0.5 rounded
-            ${isLive 
+            ${isLive() 
               ? 'bg-gray-800 border-2 border-gray-600 text-white shadow-lg' 
               : match.status.type === 'finished'
                 ? 'bg-gray-800/40 border border-gray-700 text-gray-300'
                 : 'text-gray-500'
             }
-            ${match.awayScore?.current > match.homeScore?.current && (isLive || match.status.type === 'finished')
+            ${match.awayScore?.current > match.homeScore?.current && (isLive() || match.status.type === 'finished')
               ? 'ring-2 ring-green-500/30'
               : ''
             }

@@ -51,8 +51,8 @@ const LiveMatches: React.FC = () => {
 
   useEffect(() => {
     fetchLiveMatches();
-    // Her 30 saniyede bir güncelle
-    const interval = setInterval(fetchLiveMatches, 30000);
+    // 5 saniyede bir güncelle (5000 milisaniye)
+    const interval = setInterval(fetchLiveMatches, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -62,13 +62,26 @@ const LiveMatches: React.FC = () => {
       const response = await fetch('https://www.sofascore.com/api/v1/sport/football/events/live');
       const data = await response.json();
       
-      // Canlı maçları filtrele ve sırala
-      const liveMatches = data.events.filter((match: Match) => 
-        match.status.type === 'inprogress'
-      ).sort((a: Match, b: Match) => 
-        a.tournament.uniqueTournament.id - b.tournament.uniqueTournament.id
+      // Tüm olası canlı maç durumlarını kontrol et
+      const liveMatches = data.events.filter((match: Match) => {
+        const status = match.status.type?.toLowerCase();
+        const description = match.status.description?.toLowerCase();
+
+        return (
+          status === 'inprogress' || 
+          status === 'live' ||
+          description?.includes('devre') ||
+          description?.includes('yarı') ||
+          /^\d+\'$/.test(description || '') || // Dakika gösterimi (örn: "45'")
+          description?.includes('halftime') ||
+          description?.includes('half time') ||
+          status === 'playing'
+        );
+      }).sort((a: Match, b: Match) => 
+        a.tournament.uniqueTournament?.id - b.tournament.uniqueTournament?.id
       );
 
+      console.log('Filtrelenen maçlar:', liveMatches); // Debug için
       setMatches(liveMatches);
     } catch (error) {
       console.error('Canlı maçlar yüklenirken hata:', error);
@@ -120,7 +133,7 @@ const LiveMatches: React.FC = () => {
             Canlı Maçlar
           </h1>
           <div className="text-sm text-gray-400">
-            Her 30 saniyede bir güncelleniyor
+            Her 5 saniyede bir güncelleniyor
           </div>
         </div>
 
@@ -200,15 +213,22 @@ const LiveMatches: React.FC = () => {
                     </div>
                   </div>
                   <div className="divide-y divide-gray-700/50">
-                    {leagueMatches.map(match => (
-                      <MatchCard
-                        key={match.id}
-                        match={match}
-                        onClick={() => handleMatchClick(match.id)}
-                        onToggleFavorite={toggleFavorite}
-                        isFavorite={favoriteMatches.includes(match.id)}
-                      />
-                    ))}
+                    {leagueMatches.map(match => {
+                      const isLive = match.status.type === 'inprogress' || 
+                                     match.status.description === 'Devre Arası' ||
+                                     match.status.description === 'İlk Yarı Sonucu';
+
+                      return (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onClick={() => handleMatchClick(match.id)}
+                          onToggleFavorite={toggleFavorite}
+                          isFavorite={favoriteMatches.includes(match.id)}
+                          isLive={isLive}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               ))}

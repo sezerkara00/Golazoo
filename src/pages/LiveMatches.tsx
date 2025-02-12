@@ -92,8 +92,18 @@ const LiveMatches: React.FC = () => {
     navigate(`/match/${matchId}`);
   };
 
-  // Maçları liglere göre grupla
+  // Maçları liglere göre grupla - Null check ekleyelim
   const groupedMatches = matches.reduce((groups: {[key: string]: Match[]}, match) => {
+    // Tournament veya category null ise kontrol et
+    if (!match.tournament?.category?.name || !match.tournament?.uniqueTournament?.name) {
+      const leagueName = 'Diğer Maçlar';
+      if (!groups[leagueName]) {
+        groups[leagueName] = [];
+      }
+      groups[leagueName].push(match);
+      return groups;
+    }
+
     const leagueName = `${match.tournament.category.name} - ${match.tournament.uniqueTournament.name}`;
     if (!groups[leagueName]) {
       groups[leagueName] = [];
@@ -173,25 +183,32 @@ const LiveMatches: React.FC = () => {
                 <div key={leagueName} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
                   <div className="bg-gradient-to-r from-gray-700/50 to-transparent px-4 py-3">
                     <div>
-                      <span className="text-sm text-gray-400">
-                        {leagueName.split(' - ')[0]}
-                      </span>
-                      <h2 className="text-lg font-semibold text-white">
-                        {leagueName.split(' - ')[1]}
-                      </h2>
+                      {leagueName !== 'Diğer Maçlar' ? (
+                        <>
+                          <span className="text-sm text-gray-400">
+                            {leagueName.split(' - ')[0]}
+                          </span>
+                          <h2 className="text-lg font-semibold text-white">
+                            {leagueName.split(' - ')[1]}
+                          </h2>
+                        </>
+                      ) : (
+                        <h2 className="text-lg font-semibold text-white">
+                          {leagueName}
+                        </h2>
+                      )}
                     </div>
                   </div>
                   <div className="divide-y divide-gray-700/50">
-                    {leagueMatches
-                      .map(match => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          onClick={() => handleMatchClick(match.id)}
-                          onToggleFavorite={toggleFavorite}
-                          isFavorite={favoriteMatches.includes(match.id)}
-                        />
-                      ))}
+                    {leagueMatches.map(match => (
+                      <MatchCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => handleMatchClick(match.id)}
+                        onToggleFavorite={toggleFavorite}
+                        isFavorite={favoriteMatches.includes(match.id)}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}
